@@ -65,42 +65,45 @@ options =
     (ReqArg
      (\arg opt -> return opt {optF = arg})
       "String")
-    "Function String for F (x,y) = _\nDefault: \"y\""
+    $ unlines $ ["Function String for F (x,y) = _","(Default: \"y\")"]
   , Option "G" []
     (ReqArg
      (\arg opt -> return opt {optG = arg})
       "String")
-    "Function String for G (x,y) = _\nDefault: \"-sin x\""
+    $ unlines $ ["Function String for G (x,y) = _","(Default: \"-sin x\")"]
   , Option "f" []
     (ReqArg
      (\arg opt -> return opt {optG = arg})
       "File")
-    "BMP file save name\nDefault: default.bmp"
+    $ unlines $ ["BMP file save name","(Default: default.bmp)"]
   , Option "a" ["aa"]
     (ReqArg
      (\arg opt -> return opt {optAA = read arg})
       "Int")
-    "Anti-Aliasing\nDefault: 1"
+    $ unlines $ ["Anti-Aliasing","(Default: 1)"]
   , Option "r" ["res"]
     (ReqArg
      (\arg opt -> return opt {optRes = let (x,y) = read arg in V2 y x})
       "(Int,Int)")
-    "Resolution of output image\nDefault: (1920,1080)"
+    $ unlines $ ["Resolution of output image, needs quotes in cmd line","(Default: (1920,1080))"]
   , Option "c" ["center"]
     (ReqArg
      (\arg opt -> return opt {optFieldCenter = let (x,y) = read arg in V2 y x})
       "(Double,Double)")
-    "Center of field View\nDefault: (0,0)"
+    $ unlines $ ["Center of field View, needs quotes in cmd line","(Default: (0,0))"]
   , Option "H" ["height"]
     (ReqArg
      (\arg opt -> return opt {optFieldHeight = read arg})
       "Double")
-    "Height of field view\nDefault: 1"
+    $ unlines $ ["Height of field view","(Default: 1)"]
   , Option "m" ["multiplier"]
     (ReqArg
      (\arg opt -> return opt {optLogMultiplier = read arg})
       "Double")
-    "Multiplier of log function to convert colors,\na higher number means less color variability between low and high magnitude vectors\nDefault: 2"
+    $ unlines $ ["Multiplier of log function to convert colors,"
+                ,"a higher number means less color variability "
+                ,"between low and high magnitude vectors"
+                ,"(Default: 2)"]
   , Option "h" ["help"]
     (NoArg
       (\_ -> do
