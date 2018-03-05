@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 60693bf3eb5349d5cae23e03f42f3b1bb516f3581f96c0d90e561c9ce92161c2
+-- hash: e361f48dbb1daa2c36f41c6d9d9293319442d7de4a84f0d60399bed19c9e3108
 
 name:           two-danode
 version:        0.1.0.0
@@ -48,16 +48,19 @@ executable two-danode-exe
   main-is: Main.hs
   hs-source-dirs:
       app
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -O2
   build-depends:
       accelerate
     , base >=4.7 && <5
+    , colour
     , ffmpeg-light
     , hint
     , linear
     , linear-accelerate
     , mtl
+    , readline
     , repa
+    , repa-io
     , two-danode
     , vector
   other-modules:

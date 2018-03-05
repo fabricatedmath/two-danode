@@ -21,49 +21,65 @@ data FieldDescription a =
   { _res :: !(V2 Int)
   , _center :: !(V2 a)
   , _h :: !a
+  , _aa :: Int
   } deriving Show
 
-generateCoords :: Fractional a => FieldDescription a -> (V2 Int -> V2 a)
-generateCoords  (FromCenter res center h) =
+generateCoords :: Fractional a => FieldDescription a -> (V3 Int -> V2 a)
+generateCoords (FromCenter res center h aa) =
   let
     res'@(V2 resY' resX') = fmap fromIntegral res
     w = let aspect = resX' / resY' in aspect * h
     offset' = center - V2 h w
     multiplier' = 2 * V2 h w / res'
+    aaSq = aa*aa
+    aaSq' = fromIntegral aaSq
   in
-    (\loc -> multiplier' * fmap fromIntegral loc + offset')
+    (\(V3 y x i) ->
+       let
+         aaoffset = fmap ((/aaSq') . fromIntegral) $ V2 (i `div` aa) (i `rem` aa)
+       in
+         multiplier' * (fmap fromIntegral (V2 y x) + aaoffset) + offset'
+    )
 
-{-# SPECIALIZE generateCoords :: FieldDescription Float -> (V2 Int -> V2 Float) #-}
-{-# SPECIALIZE generateCoords :: FieldDescription Double -> (V2 Int -> V2 Double) #-}
+-- {-# INLINABLE generateCoords #-}
+{-# SPECIALIZE generateCoords :: FieldDescription Float -> (V3 Int -> V2 Float) #-}
+{-# SPECIALIZE generateCoords :: FieldDescription Double -> (V3 Int -> V2 Double) #-}
 
 buildFieldRepa
-  :: (Fractional a, Unbox b)
+  :: forall a b. (Fractional a, Unbox b)
   => FieldDescription a
   -> (V2 a -> b)
   -> (V2 a -> b)
-  -> Array U DIM2 (V2 b)
+  -> Array U DIM3 (V2 b)
 buildFieldRepa fd f g =
   let
     V2 resY resX = _res fd
     coordinator = generateCoords fd
+    aa = _aa fd
+    dim = Z :. resY :. resX :. aa*aa
   in
-    runIdentity $ computeUnboxedP $ fromFunction (Z :. resY :. resX)
-    (\(Z :. y :. x) -> (\v -> V2 (f v) (g v)) . coordinator $ V2 y x)
+    runIdentity $ computeUnboxedP $ fromFunction dim
+    (\(Z :. y :. x :. i) ->
+        (\v -> V2 (g v) (f v)) . coordinator $ (V3 y x i)
+    )
 
 buildFieldAccelerate
   :: (A.Elt b, Fractional a, Unbox b)
   => FieldDescription a
   -> (V2 a -> b)
   -> (V2 a -> b)
-  -> A.Array A.DIM2 (A.V2 b)
+  -> A.Array A.DIM3 (A.V2 b)
 buildFieldAccelerate fd f g =
   let
     V2 resY resX = _res fd
-    dim = A.Z A.:. resY A.:. resX
+    aa = _aa fd
+    dim = A.Z A.:. resY A.:. resX A.:. aa*aa
     coordinator = generateCoords fd
   in
     A.fromFunction dim
-    (\(A.Z A.:. y A.:. x) -> (\v -> A.V2 (f v) (g v)) . coordinator $ A.V2 y x)
+    (\(A.Z A.:. y A.:. x A.:. i) ->
+       (\v -> A.V2 (g v) (f v)) . coordinator $ A.V3 y x i
+    )
 
 buildField
   :: forall a b. (Unbox b, Fractional a)
@@ -73,8 +89,10 @@ buildField
   -> UV.Vector (V2 b)
 buildField fd f g =
   let
+    aa = _aa fd
+    aaSq = aa*aa
     coordinator :: Int -> V2 a
-    coordinator i = generateCoords fd $ V2 (i `div` resX) (i `rem` resX)
+    coordinator i = generateCoords fd $ V3 (i `div` (resX*aaSq)) (i `rem` (resX*aaSq) `div` aaSq) (i `rem` aaSq)
     V2 resY resX = _res fd
   in
-    UV.generate (resY*resX) $ (\v -> V2 (f v) (g v)) . coordinator
+    UV.generate (resY*resX*aaSq) $ (\v -> V2 (g v) (f v)) . coordinator

@@ -44,6 +44,7 @@ extra-deps:
 - cuda-0.9.0.1
 - nvvm-0.8.0.1
 - repa-3.4.1.3
+- repa-io-3.4.1.1
 - tasty-hedgehog-0.1.0.1
 - ffmpeg-light-0.12.0.1
 

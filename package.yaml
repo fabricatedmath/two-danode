@@ -40,9 +40,13 @@ executables:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -O2
     dependencies:
     - two-danode
     - hint
+    - readline
+    - colour
+    - repa-io
 
 tests:
   two-danode-test:
