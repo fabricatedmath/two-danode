@@ -1,0 +1,56 @@
+name:                two-danode
+version:             0.1.0.0
+github:              "githubuser/two-danode"
+license:             BSD2
+author:              "Charles Durham"
+maintainer:          "fabricatedmath@gmail.com"
+copyright:           "2018 Charles Durham"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on Github at <https://github.com/fabricatedmath/two-danode#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- linear
+- vector
+- mtl
+- repa
+- accelerate
+- linear-accelerate
+- ffmpeg-light
+
+library:
+  source-dirs: src
+
+executables:
+  two-danode-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - two-danode
+    - hint
+
+tests:
+  two-danode-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - two-danode
