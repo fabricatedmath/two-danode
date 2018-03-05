@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e361f48dbb1daa2c36f41c6d9d9293319442d7de4a84f0d60399bed19c9e3108
+-- hash: b84a436ee4b3625f76d1a6d565b30ae8cc82b1073bb6dc37d80f9359ee9bb4d7
 
 name:           two-danode
 version:        0.1.0.0
@@ -32,6 +32,7 @@ library
       accelerate
     , base >=4.7 && <5
     , ffmpeg-light
+    , lens
     , linear
     , linear-accelerate
     , mtl
@@ -55,6 +56,7 @@ executable two-danode-exe
     , colour
     , ffmpeg-light
     , hint
+    , lens
     , linear
     , linear-accelerate
     , mtl
@@ -77,6 +79,7 @@ test-suite two-danode-test
       accelerate
     , base >=4.7 && <5
     , ffmpeg-light
+    , lens
     , linear
     , linear-accelerate
     , mtl

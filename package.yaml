@@ -28,6 +28,7 @@ dependencies:
 - accelerate
 - linear-accelerate
 - ffmpeg-light
+- lens
 
 library:
   source-dirs: src

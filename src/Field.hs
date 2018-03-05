@@ -1,9 +1,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Field where
 
-import Linear
-
+import Control.Lens
 import Control.Monad.Identity (runIdentity)
 
 import qualified Data.Array.Accelerate as A
@@ -16,6 +16,8 @@ import Data.Function (on)
 import Data.Vector.Unboxed (Vector)
 import Data.Vector.Unboxed as UV
 
+import Linear
+
 data FieldDescription a =
   FromCenter
   { _res :: !(V2 Int)
@@ -23,6 +25,11 @@ data FieldDescription a =
   , _h :: !a
   , _aa :: Int
   } deriving Show
+
+defaultFieldDescription :: Num a => FieldDescription a
+defaultFieldDescription = FromCenter (V2 1080 1920) (V2 0 0) 1 1
+
+makeLenses ''FieldDescription
 
 generateCoords :: Fractional a => FieldDescription a -> (V3 Int -> V2 a)
 generateCoords (FromCenter res center h aa) =

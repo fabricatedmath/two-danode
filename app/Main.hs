@@ -1,9 +1,10 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Main where
 
 import Field
 
+import Control.Lens
 import Control.Monad.Identity (runIdentity)
 
 import Data.Array.Repa (Array,DIM2,DIM3,U,Z(..),(:.)(..),deepSeqArray)
@@ -28,77 +29,75 @@ import System.Environment (getArgs, getProgName)
 import System.Exit
 import System.IO
 
-getUsage :: IO String
-getUsage =
-  do
-    prg <- getProgName
-    return $ usageInfo prg options
-
 data Options =
   Options
-  { optRes :: V2 Int
-  , optFieldCenter :: V2 Double
-  , optFieldHeight :: Double
-  , optAA :: Int
-  , optFile :: FilePath
-  , optLogMultiplier :: Double
-  , optF :: String
-  , optG :: String
-  }
+  { _optFieldDescription :: FieldDescription Double
+  , _optFile :: FilePath
+  , _optLogMultiplier :: Double
+  , _optF :: String
+  , _optG :: String
+  } deriving Show
+
+makeLenses ''Options
 
 startOptions :: Options
 startOptions =
   Options
-  { optF = "y"
-  , optG = "-sin x"
-  , optRes = V2 1080 1920
-  , optFieldCenter = V2 0 0
-  , optFieldHeight = 2
-  , optAA = 1
-  , optLogMultiplier = 2
-  , optFile = "default.bmp"
+  { _optFieldDescription = defaultFieldDescription
+  , _optF = "y"
+  , _optG = "-sin x"
+  , _optLogMultiplier = 2
+  , _optFile = "default.bmp"
   }
 
 options :: [OptDescr (Options -> IO Options)]
 options =
   [ Option "F" []
     (ReqArg
-     (\arg opt -> return opt {optF = arg})
+     (\arg opt -> pure $ optF .~ arg $ opt)
       "String")
     $ unlines $ ["Function String for F (x,y) = _","(Default: \"y\")"]
   , Option "G" []
     (ReqArg
-     (\arg opt -> return opt {optG = arg})
+     (\arg opt -> pure $ optG .~ arg $ opt)
       "String")
     $ unlines $ ["Function String for G (x,y) = _","(Default: \"-sin x\")"]
   , Option "f" []
     (ReqArg
-     (\arg opt -> return opt {optG = arg})
+     (\arg opt -> pure $ optFile .~ arg $ opt)
       "File")
     $ unlines $ ["BMP file save name","(Default: default.bmp)"]
   , Option "a" ["aa"]
     (ReqArg
-     (\arg opt -> return opt {optAA = read arg})
+      (\arg opt -> pure $ optFieldDescription.aa .~ (read arg) $ opt)
       "Int")
     $ unlines $ ["Anti-Aliasing","(Default: 1)"]
   , Option "r" ["res"]
     (ReqArg
-     (\arg opt -> return opt {optRes = let (x,y) = read arg in V2 y x})
+     (\arg opt ->
+        let (x,y) = read arg
+            v = V2 y x
+        in pure $ optFieldDescription.res .~ v $ opt)
       "(Int,Int)")
-    $ unlines $ ["Resolution of output image, needs quotes in cmd line","(Default: (1920,1080))"]
+    $ unlines $ ["Resolution of output image, needs quotes in cmd line"
+                ,"(Default: (1920,1080))"]
   , Option "c" ["center"]
     (ReqArg
-     (\arg opt -> return opt {optFieldCenter = let (x,y) = read arg in V2 y x})
+     (\arg opt ->
+        let (x,y) = read arg
+            v = V2 y x
+        in pure $ optFieldDescription.center .~ v $ opt)
       "(Double,Double)")
-    $ unlines $ ["Center of field View, needs quotes in cmd line","(Default: (0,0))"]
+    $ unlines $ ["Center of field View, needs quotes in cmd line"
+                ,"(Default: (0,0))"]
   , Option "H" ["height"]
     (ReqArg
-     (\arg opt -> return opt {optFieldHeight = read arg})
+     (\arg opt -> pure $ optFieldDescription.h .~ (read arg) $ opt)
       "Double")
     $ unlines $ ["Height of field view","(Default: 1)"]
   , Option "m" ["multiplier"]
     (ReqArg
-     (\arg opt -> return opt {optLogMultiplier = read arg})
+     (\arg opt -> pure $ optLogMultiplier .~ read arg  $ opt)
       "Double")
     $ unlines $ ["Multiplier of log function to convert colors,"
                 ,"a higher number means less color variability "
@@ -114,6 +113,12 @@ options =
     ) "Show help"
   ]
 
+getUsage :: IO String
+getUsage =
+  do
+    prg <- getProgName
+    return $ usageInfo prg options
+
 main :: IO ()
 main =
   do
@@ -121,15 +126,14 @@ main =
     let (actions,_,_) = getOpt RequireOrder options args
     opts <- foldl (>>=) (return startOptions) actions
     let
-      file = optFile opts
-      fd = FromCenter (optRes opts) (optFieldCenter opts) (optFieldHeight opts) (optAA opts)
+      fs = _optF opts
+      gs = _optG opts
+      file = _optFile opts
+      fd = _optFieldDescription opts
       dim = let V2 y x = _res fd
                 aa = _aa fd
             in Z :. y :. x :. aa*aa :: DIM3
-      fs = optF opts
-      gs = optG opts
-      logMul = optLogMultiplier opts
-
+      logMul = _optLogMultiplier opts
     result <-
       runInterpreter $
       do
@@ -140,7 +144,6 @@ main =
               , "(\\(V2 y x) -> " ++ fs ++ ")"
               , "(\\(V2 y x) -> " ++ gs ++ ")"
               ]
-        set [languageExtensions := [TypeOperators]]
         setImports [ "Data.Array.Repa"
                    , "Data.Vector.Unboxed"
                    , "Linear"
@@ -150,7 +153,8 @@ main =
         interpret command (as :: Vector (V2 Double))
     case result of
       Left _ -> print result
-      Right v -> writeImageToBMP file $ makeImage fd logMul $ R.fromUnboxed dim v
+      Right v ->
+        writeImageToBMP file $ makeImage fd logMul $ R.fromUnboxed dim v
 
 makeImage
   :: (Epsilon a, Unbox a, RealFrac a, Floating a, Ord a)
@@ -160,8 +164,8 @@ makeImage
   -> Array U DIM2 (Word8,Word8,Word8)
 makeImage fd logMul vectorField =
   let
-    aa = _aa fd
-    aaSq' = fromIntegral $ aa*aa
+    a = _aa fd
+    aaSq' = fromIntegral $ a*a
     maxV = runIdentity $ R.foldAllP max 0 $ R.map norm $ vectorField
     image' = runIdentity $ R.sumP $ R.map (renderPoint logMul maxV) vectorField
     image =
