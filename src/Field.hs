@@ -53,10 +53,9 @@ generateCoords fd =
 buildFieldRepa
   :: forall a b. (Fractional a, Unbox b)
   => FieldDescription a
-  -> (V2 a -> b)
-  -> (V2 a -> b)
+  -> (V2 a -> V2 b)
   -> Array U DIM3 (V2 b)
-buildFieldRepa fd f g =
+buildFieldRepa fd fg =
   let
     V2 resY resX = _res fd
     coordinator = generateCoords fd
@@ -64,17 +63,14 @@ buildFieldRepa fd f g =
     dim = Z :. resY :. resX :. aa'*aa'
   in
     runIdentity $ computeUnboxedP $ fromFunction dim
-    (\(Z :. y :. x :. i) ->
-        (\v -> V2 (g v) (f v)) . coordinator $ (V3 y x i)
-    )
+    (\(Z :. y :. x :. i) -> fg . coordinator $ (V3 y x i))
 
 buildField
   :: forall a b. (Unbox b, Fractional a)
   => FieldDescription a
-  -> (V2 a -> b)
-  -> (V2 a -> b)
+  -> (V2 a -> V2 b)
   -> Vector (V2 b)
-buildField fd f g =
+buildField fd fg =
   let
     aa' = _aa fd
     aaSq = aa'*aa'
@@ -84,4 +80,4 @@ buildField fd f g =
       V3 (i `div` (resX*aaSq)) (i `rem` (resX*aaSq) `div` aaSq) (i `rem` aaSq)
     V2 resY resX = _res fd
   in
-    UV.generate (resY*resX*aaSq) $ (\v -> V2 (g v) (f v)) . coordinator
+    UV.generate (resY*resX*aaSq) $ fg . coordinator

@@ -32,6 +32,9 @@ data Options =
   { _optFieldDescription :: FieldDescription Double
   , _optFile :: FilePath
   , _optLogMultiplier :: Double
+  , _optPolar :: Bool
+  , _optR :: String
+  , _optT :: String
   , _optF :: String
   , _optG :: String
   } deriving Show
@@ -44,6 +47,9 @@ startOptions =
   { _optFieldDescription = defaultFieldDescription
   , _optF = "y"
   , _optG = "-sin x"
+  , _optPolar = False
+  , _optR = "r*(1-r*r)"
+  , _optT = "1"
   , _optLogMultiplier = 2
   , _optFile = "default.bmp"
   }
@@ -54,12 +60,26 @@ options =
     (ReqArg
      (\arg opt -> pure $ optF .~ arg $ opt)
       "String")
-    $ unlines $ ["Function String for F (x,y) = _","(Default: \"y\")"]
+    $ unlines $ ["Function String for 'x dot', F (x,y) = _","(Default: \"y\")"]
   , Option "G" []
     (ReqArg
      (\arg opt -> pure $ optG .~ arg $ opt)
       "String")
-    $ unlines $ ["Function String for G (x,y) = _","(Default: \"-sin x\")"]
+    $ unlines $ ["Function String for 'y dot', G (x,y) = _","(Default: \"-sin x\")"]
+  , Option "P" []
+    (NoArg
+     (\opt -> pure $ optPolar .~ True $ opt))
+    $ unlines $ ["Set to use polar coordinates in terms of r and t, r-dot and theta-dot"]
+  , Option "R" []
+    (ReqArg
+     (\arg opt -> pure $ optR .~ arg $ opt)
+      "String")
+    $ unlines $ ["Function String for polar 'r dot', R (x,y) = _","(Default: \"r*(1-r^2)\")"]
+  , Option "T" []
+    (ReqArg
+     (\arg opt -> pure $ optT .~ arg $ opt)
+      "String")
+    $ unlines $ ["Function String for polar 'theta dot', T (x,y) = _","(Default: \"1\")"]
   , Option "f" []
     (ReqArg
      (\arg opt -> pure $ optFile .~ arg $ opt)
@@ -117,6 +137,23 @@ getUsage =
     prg <- getProgName
     return $ usageInfo prg options
 
+createFunction :: Options -> String
+createFunction opts
+  | _optPolar opts =
+    "(\\(V2 y x) -> let " ++
+    "r = sqrt $ x*x + y*y" ++ "; " ++
+    "theta = atan2 y x" ++ "; " ++
+    "rdot = " ++ _optR opts ++ "; " ++
+    "thetadot = " ++ _optT opts ++ "; " ++
+    "xdot = rdot*cos theta - r*sin theta * thetadot" ++ "; " ++
+    "ydot = rdot*sin theta + r*cos theta * thetadot" ++ "; " ++
+    "in V2 ydot xdot)"
+  | otherwise =
+    "(\\(V2 y x) -> let " ++
+    "xdot = " ++ _optF opts ++ "; " ++
+    "ydot = " ++ _optG opts ++ "; " ++
+    "in V2 ydot xdot)"
+
 main :: IO ()
 main =
   do
@@ -124,8 +161,7 @@ main =
     let (actions,_,_) = getOpt RequireOrder options args
     opts <- foldl (>>=) (return startOptions) actions
     let
-      fs = _optF opts
-      gs = _optG opts
+      funcS = createFunction opts
       file = _optFile opts
       fd = _optFieldDescription opts
       dim = let V2 y x = _res fd
@@ -139,8 +175,7 @@ main =
               unwords
               [ "toUnboxed $ buildFieldRepa"
               , "(" ++ show fd ++ ")"
-              , "(\\(V2 y x) -> " ++ fs ++ ")"
-              , "(\\(V2 y x) -> " ++ gs ++ ")"
+              , funcS
               ]
         setImports [ "Data.Array.Repa"
                    , "Data.Vector.Unboxed"
