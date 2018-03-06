@@ -25,13 +25,12 @@ dependencies:
 - vector
 - mtl
 - repa
-- accelerate
-- linear-accelerate
-- ffmpeg-light
 - lens
 
 library:
   source-dirs: src
+  ghc-options:
+  - -O2
 
 executables:
   two-danode-exe:
@@ -45,7 +44,6 @@ executables:
     dependencies:
     - two-danode
     - hint
-    - readline
     - colour
     - repa-io
 

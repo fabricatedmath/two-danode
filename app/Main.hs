@@ -15,7 +15,6 @@ import Data.Colour.RGBSpace
 import Data.Colour.RGBSpace.HSL
 
 import Data.Vector.Unboxed (Vector,Unbox)
-import qualified Data.Vector.Unboxed as UV
 
 import Data.Word (Word8)
 
@@ -24,7 +23,6 @@ import Linear
 import Language.Haskell.Interpreter
 
 import System.Console.GetOpt
-import System.Console.Readline
 import System.Environment (getArgs, getProgName)
 import System.Exit
 import System.IO
@@ -131,8 +129,8 @@ main =
       file = _optFile opts
       fd = _optFieldDescription opts
       dim = let V2 y x = _res fd
-                aa = _aa fd
-            in Z :. y :. x :. aa*aa :: DIM3
+                aa' = _aa fd
+            in Z :. y :. x :. aa'*aa' :: DIM3
       logMul = _optLogMultiplier opts
     result <-
       runInterpreter $
@@ -164,8 +162,8 @@ makeImage
   -> Array U DIM2 (Word8,Word8,Word8)
 makeImage fd logMul vectorField =
   let
-    a = _aa fd
-    aaSq' = fromIntegral $ a*a
+    aa' = _aa fd
+    aaSq' = fromIntegral $ aa'*aa'
     maxV = runIdentity $ R.foldAllP max 0 $ R.map norm $ vectorField
     image' = runIdentity $ R.sumP $ R.map (renderPoint logMul maxV) vectorField
     image =
