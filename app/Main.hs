@@ -29,7 +29,7 @@ import System.IO
 
 data Options =
   Options
-  { _optFieldDescription :: FieldDescription Double
+  { _optFD :: FieldDescription Double
   , _optFile :: FilePath
   , _optLogMultiplier :: Double
   , _optPolar :: Bool
@@ -44,7 +44,7 @@ makeLenses ''Options
 startOptions :: Options
 startOptions =
   Options
-  { _optFieldDescription = defaultFieldDescription
+  { _optFD = defaultFieldDescription
   , _optF = "y"
   , _optG = "-sin x"
   , _optPolar = False
@@ -60,67 +60,72 @@ options =
     (ReqArg
      (\arg opt -> pure $ optF .~ arg $ opt)
       "String")
-    $ unlines $ ["Function String for 'x dot', F (x,y) = _","(Default: \"y\")"]
+    $ unlines $ ["Function String for 'x dot', F (x,y) = _"
+                ,"Default: " ++ show (_optF startOptions)]
   , Option "G" []
     (ReqArg
      (\arg opt -> pure $ optG .~ arg $ opt)
       "String")
-    $ unlines $ ["Function String for 'y dot', G (x,y) = _","(Default: \"-sin x\")"]
+    $ unlines $ ["Function String for 'y dot', G (x,y) = _"
+                ,"Default: " ++ show (_optG startOptions)]
   , Option "P" []
     (NoArg
      (\opt -> pure $ optPolar .~ True $ opt))
-    $ unlines $ ["Set to use polar coordinates in terms of r and t, r-dot and theta-dot"]
+    $ unlines $ ["Set to use polar coordinates in terms of r and theta"
+                ,"as r-dot and theta-dot"]
   , Option "R" []
     (ReqArg
      (\arg opt -> pure $ optR .~ arg $ opt)
       "String")
-    $ unlines $ ["Function String for polar 'r dot', R (x,y) = _","(Default: \"r*(1-r^2)\")"]
+    $ unlines $ ["Function String for polar 'r dot', R (r,theta) = _"
+                ,"Default: " ++ show (_optR startOptions)]
   , Option "T" []
     (ReqArg
      (\arg opt -> pure $ optT .~ arg $ opt)
       "String")
-    $ unlines $ ["Function String for polar 'theta dot', T (x,y) = _","(Default: \"1\")"]
+    $ unlines $ ["Function String for polar 'theta dot', T (r,theta) = _"
+                ,"Default: " ++ show (_optT startOptions)]
   , Option "f" []
     (ReqArg
      (\arg opt -> pure $ optFile .~ arg $ opt)
       "File")
-    $ unlines $ ["BMP file save name","(Default: default.bmp)"]
+    $ unlines $ ["BMP file save name"
+                ,"Default: " ++ show (_optFile startOptions)]
   , Option "a" ["aa"]
     (ReqArg
-      (\arg opt -> pure $ optFieldDescription.aa .~ (read arg) $ opt)
+      (\arg opt -> pure $ optFD.aa .~ read arg $ opt)
       "Int")
-    $ unlines $ ["Anti-Aliasing","(Default: 1)"]
+    $ unlines $ ["Anti-Aliasing"
+                ,"Default: " ++ show (startOptions ^. optFD.aa)]
   , Option "r" ["res"]
     (ReqArg
-     (\arg opt ->
-        let (x,y) = read arg
-            v = V2 y x
-        in pure $ optFieldDescription.res .~ v $ opt)
+     (\arg opt -> pure $ optFD.res .~ read arg ^. tupleToV2 $ opt)
       "(Int,Int)")
-    $ unlines $ ["Resolution of output image, needs quotes in cmd line"
-                ,"(Default: (1920,1080))"]
+    $ unlines $
+    ["Resolution of output image, needs quotes in cmd line"
+    ,"Default: " ++ show (startOptions ^. optFD.res.v2ToTuple.to show)]
   , Option "c" ["center"]
     (ReqArg
-     (\arg opt ->
-        let (x,y) = read arg
-            v = V2 y x
-        in pure $ optFieldDescription.center .~ v $ opt)
+     (\arg opt -> pure $ optFD.center .~ read arg ^. tupleToV2 $ opt)
       "(Double,Double)")
-    $ unlines $ ["Center of field View, needs quotes in cmd line"
-                ,"(Default: (0,0))"]
+    $ unlines $
+    ["Center of field View, needs quotes in cmd line"
+    ,"Default: " ++ show (startOptions ^. optFD.center.v2ToTuple.to show)]
   , Option "H" ["height"]
     (ReqArg
-     (\arg opt -> pure $ optFieldDescription.h .~ (read arg) $ opt)
+     (\arg opt -> pure $ optFD.h .~ read arg $ opt)
       "Double")
-    $ unlines $ ["Height of field view","(Default: 1)"]
+    $ unlines $ ["Height of field view"
+                ,"Default: " ++ show (startOptions ^. optFD.h)]
   , Option "m" ["multiplier"]
     (ReqArg
      (\arg opt -> pure $ optLogMultiplier .~ read arg  $ opt)
       "Double")
-    $ unlines $ ["Multiplier of log function to convert colors,"
-                ,"a higher number means less color variability "
-                ,"between low and high magnitude vectors"
-                ,"(Default: 2)"]
+    $ unlines $
+    ["Multiplier of log function to convert colors,"
+    ,"a higher number means less intensity variability "
+    ,"between low and high magnitude vectors"
+    ,"Default: " ++ show (startOptions ^. optLogMultiplier)]
   , Option "h" ["help"]
     (NoArg
       (\_ -> do
@@ -163,7 +168,7 @@ main =
     let
       funcS = createFunction opts
       file = _optFile opts
-      fd = _optFieldDescription opts
+      fd = _optFD opts
       dim = let V2 y x = _res fd
                 aa' = _aa fd
             in Z :. y :. x :. aa'*aa' :: DIM3
@@ -185,14 +190,14 @@ main =
                    ]
         interpret command (as :: Vector (V2 Double))
     case result of
-      Left _ -> print result
+      Left err -> print err
       Right v ->
         writeImageToBMP file $ makeImage fd logMul $ R.fromUnboxed dim v
 
 makeImage
   :: (Epsilon a, Unbox a, RealFrac a, Floating a, Ord a)
   => FieldDescription a
-  -> a
+  -> a --logMul
   -> Array U DIM3 (V2 a)
   -> Array U DIM2 (Word8,Word8,Word8)
 makeImage fd logMul vectorField =
@@ -213,16 +218,15 @@ makeImage fd logMul vectorField =
 
 renderPoint
   :: (Epsilon a, RealFrac a, Floating a, Ord a)
-  => a
-  -> a
+  => a --logMul
+  -> a --maxV
   -> V2 a
   -> V3 a
 renderPoint logMul maxV v@(V2 y _x) =
   let
-    theta =
-      let
-        theta' = acos $ (V2 0 1) `dot` normalize v
-      in if y < 0 then 2*pi - theta' else theta'
+    theta | y < 0 = 2*pi - theta'
+          | otherwise = theta'
+      where theta' = acos $ (V2 0 1) `dot` normalize v
     applyLogFilter n = log $ (n*logMul + 1)
     h' = 360*theta/(2*pi)
     s' = 0.5
