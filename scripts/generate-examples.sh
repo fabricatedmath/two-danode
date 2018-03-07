@@ -1,21 +1,40 @@
 #!/bin/bash
 
+# Simple limit cycle
 time stack exec -- two-danode-exe -P -R "r*(1-r^2)" -T "1" -H 1.5 -c "(0,0)" -m 20 -r "(4096,4096)" -f 001.bmp
+
+# Spiral with homoclinic orbit
 time stack exec -- two-danode-exe -F "y-y^3" -G "-x-y^2" -H 2 -c "(0,0)" -m 20 -r "(4096,4096)" -f 002.bmp
+
 time stack exec -- two-danode-exe -F "-2*cos x - cos y" -G "-2*cos y - cos x" -H 4 -c "(0,0)" -m 5 -r "(4096,4096)" -f 003.bmp
+
+# Pendulum
 time stack exec -- two-danode-exe -F "y" -G "-sin x" -H 8 -c "(0,0.0)" -m 10 -r "(4096,4096)" -f 004.bmp
+
+# Damped pendulum
 time stack exec -- two-danode-exe -F "y" -G "-1*y-sin x" -H 8 -c "(0,0.0)" -m 10 -r "(4096,4096)" -f 005.bmp
+
+# Van der pol oscillator
 time stack exec -- two-danode-exe -F "y" -G "-x+y*(1-x^2)" -H 4 -c "(0,0)" -m 10 -r "(4096,4096)" -f 006.bmp
+
 time stack exec -- two-danode-exe -F "y^3 - 4*x" -G "y^3 - y - 3*x" -H 6 -c "(0,0)" -m 1 -r "(4096,4096)" -f 007.bmp
 time stack exec -- two-danode-exe -F "y^3 - 12*x" -G "y^3 - y - 10*x" -H 3 -c "(0,0)" -m 10 -r "(4096,4096)" -f 008.bmp
 time stack exec -- two-danode-exe -F "-x+1*y+x*x*y" -G "1-1*y-x*x*y" -H 2 -c "(0,0.5)" -m 100 -r "(4096,4096)" -f 009.bmp
+
+# Infinite-period bifurcations
 time stack exec -- two-danode-exe -R "r*(1-r*r)" -T "1 - sin theta" -P -H 2 -m 10 -r "(4096,4096)" -f 010.bmp
 time stack exec -- two-danode-exe -R "r*(1-r*r)" -T "0.5 - sin theta" -P -H 2 -m 20 -r "(4096,4096)" -f 011.bmp
+
 time stack exec -- two-danode-exe -F "1 - (1+1)*x+1*x*x*y" -G "1*x-1*x*x*y" -H 5 -m 20 -r "(4096,4096)" -f 012.bmp
+
+# Competition models for shared resource
 time stack exec -- two-danode-exe -F "x*(1-x/100) - x*y" -G "y*(1-y/20)-x*y" -H 2 -m 10 -r "(4096,4096)" -f 013.bmp
 time stack exec -- two-danode-exe -F "x*(1-x/10) - x*y" -G "y*(1-y/5)-x*y" -H 5 -r "(4096,4096)" -f 014.bmp
 time stack exec -- two-danode-exe -F "1.25*x*(1-x/10) - x*y" -G "y*(1-y/5)-x*y" -H 5 -m 10 -r "(4096,4096)" -f 015.bmp
+
+# Predator prey model
 time stack exec -- two-danode-exe -F "0.75*x*(1-x/2) - 2*x*y/(1+x)" -G "-y + 2*x*y/(1+x)" -H 0.75 -c "(0.75,0.75)" -m 20 -r "(4096,4096)" -f 016.bmp
+
 time stack exec -- two-danode-exe -P -R "2*(1-2*sin theta + r * (1-r*r*r))" -T "1 - 0.5*cos theta + sin theta * r" -H 1.5 -c "(0,-0.25)" -m 8 -r "(4096,4096)" -f 017.bmp
 time stack exec -- two-danode-exe -P -c "(0,0)" -R "r*(1-r)*(r-1)*(0.5-r)" -T "sin (12*theta)" -H 2.2  -m 300 -r "(4096,4096)" -f 018.bmp
 time stack exec -- two-danode-exe -P -c "(0,0)" -m 300 -R "r*(r-1)*(0.5-r)" -T "sin (12*theta)*(cos (8*theta))" -H 2 -r "(4096,4096)" -f 019.bmp
