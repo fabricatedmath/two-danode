@@ -1,7 +1,7 @@
 name:                two-danode
 version:             0.1.0.0
 github:              "githubuser/two-danode"
-license:             BSD2
+license:             BSD3
 author:              "Charles Durham"
 maintainer:          "fabricatedmath@gmail.com"
 copyright:           "2018 Charles Durham"

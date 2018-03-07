@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0223f02e37011f0527eef820b68e17dea324614cf5bfadf1835f2af3433c5387
+-- hash: 9f5c7ddc10972b2fd830c0782b3c5ecba830146bedc111064ab6665811713dc9
 
 name:           two-danode
 version:        0.1.0.0
@@ -12,7 +12,7 @@ bug-reports:    https://github.com/githubuser/two-danode/issues
 author:         Charles Durham
 maintainer:     fabricatedmath@gmail.com
 copyright:      2018 Charles Durham
-license:        BSD2
+license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
 cabal-version:  >= 1.10

@@ -41,31 +41,29 @@ packages:
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
 extra-deps:
-- cuda-0.9.0.1
-- nvvm-0.8.0.1
 - repa-3.4.1.3
 - repa-io-3.4.1.1
-- tasty-hedgehog-0.1.0.1
-- ffmpeg-light-0.12.0.1
+# - tasty-hedgehog-0.1.0.1
+# - ffmpeg-light-0.12.0.1
 
-- git:    https://github.com/tmcdonell/accelerate.git
-  commit: c2946299193ac55547d51ff32abc3bfd9ad42d59
+# - git:    https://github.com/tmcdonell/accelerate.git
+#   commit: c2946299193ac55547d51ff32abc3bfd9ad42d59
 
-- git:    https://github.com/tmcdonell/accelerate-llvm.git
-  commit: 380225bf25e237c08b079e681f82ce5541295fdf
-  subdirs:
-    - 'accelerate-llvm'
-    - 'accelerate-llvm-native'
-    - 'accelerate-llvm-ptx'
+# - git:    https://github.com/tmcdonell/accelerate-llvm.git
+#   commit: 380225bf25e237c08b079e681f82ce5541295fdf
+#   subdirs:
+#     - 'accelerate-llvm'
+#     - 'accelerate-llvm-native'
+#     - 'accelerate-llvm-ptx'
 
-- git:    https://github.com/tmcdonell/accelerate-io.git
-  commit: 6e2cbcc915310e6fed0dcfb7dc09fa497a2efe2a
+# - git:    https://github.com/tmcdonell/accelerate-io.git
+#   commit: 6e2cbcc915310e6fed0dcfb7dc09fa497a2efe2a
 
-- git:    https://github.com/tmcdonell/colour-accelerate.git
-  commit: 6740c35e10fe3db655943fb56901418b8e99a946
+# - git:    https://github.com/tmcdonell/colour-accelerate.git
+#   commit: 6740c35e10fe3db655943fb56901418b8e99a946
 
-- git:    https://github.com/tmcdonell/linear-accelerate.git
-  commit: feaf458f4ecbebc33846420cf6f4cfcf9ea090c5
+# - git:    https://github.com/tmcdonell/linear-accelerate.git
+#   commit: feaf458f4ecbebc33846420cf6f4cfcf9ea090c5
 
 
 # Override default flag values for local packages and extra-deps
