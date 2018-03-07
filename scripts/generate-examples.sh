@@ -71,3 +71,7 @@ time stack exec -- two-danode-exe -H 5 -r "(4096,4096)" -f 049.bmp -F "sin(2*y -
 time stack exec -- two-danode-exe -H 3 -r "(4096,4096)" -f 050.bmp -F "sin(2*y - 3*x)*exp(-abs (sin (3*x+1-2*y) - cos(x-3*y+1)))" -G "cos(2*y - 3*x)*exp(-abs (cos (3*x+1-2*y) - cos(x-3*y+1)))"
 time stack exec -- two-danode-exe -H 5 -r "(4096,4096)" -f 051.bmp -F "sin(2*y - 3*x)*exp(-abs (sin (3*x+1-2*y) - cos(x-3*y+1)))" -G "cos(2*y - 3*x)*exp(-abs (cos (3*x+1-2*y) - cos(x-3*y+1)))"
 time stack exec -- two-danode-exe -H 5 -r "(4096,4096)" -f 052.bmp -F "cos(2*y - 3*x)*exp(-abs (cos (3*x+1-2*y) - cos(x-3*y+1)))" -G "cos(2*y - 3*x)*exp(-abs (cos (3*x+1-2*y) - cos(x-3*y+1)))"
+
+#More Competition models for shared resources
+time stack exec -- two-danode-exe -F "x*(3-x - 2*y)" -G "y*(2-x-y)" -H 4 -m 10 -r "(4096,4096)" -f 053.bmp
+time stack exec -- two-danode-exe -F "x*(1-x/7) - x*y" -G "y*(1-y/4)-x*y" -H 10 -m 10 -r "(4096,4096)" -f 054.bmp
