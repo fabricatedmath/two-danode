@@ -31,7 +31,7 @@ data Options =
   Options
   { _optFD :: FieldDescription Double
   , _optFile :: FilePath
-  , _optLogMultiplier :: Double
+  , _optLogMultiplier :: Maybe Double
   , _optPolar :: Bool
   , _optR :: String
   , _optT :: String
@@ -50,7 +50,7 @@ startOptions =
   , _optPolar = False
   , _optR = "r*(1-r*r)"
   , _optT = "1"
-  , _optLogMultiplier = 2
+  , _optLogMultiplier = Nothing
   , _optFile = "default.bmp"
   }
 
@@ -119,7 +119,7 @@ options =
                 ,"Default: " ++ show (startOptions ^. optFD.h)]
   , Option "m" ["multiplier"]
     (ReqArg
-     (\arg opt -> pure $ optLogMultiplier .~ read arg  $ opt)
+     (\arg opt -> pure $ optLogMultiplier .~ Just (read arg)  $ opt)
       "Double")
     $ unlines $
     ["Multiplier of log function to convert colors,"
@@ -197,7 +197,7 @@ main =
 makeImage
   :: (Epsilon a, Unbox a, RealFrac a, Floating a, Ord a)
   => FieldDescription a
-  -> a --logMul
+  -> Maybe a --logMul
   -> Array U DIM3 (V2 a)
   -> Array U DIM2 (Word8,Word8,Word8)
 makeImage fd logMul vectorField =
@@ -218,16 +218,19 @@ makeImage fd logMul vectorField =
 
 renderPoint
   :: (Epsilon a, RealFrac a, Floating a, Ord a)
-  => a --logMul
+  => Maybe a --logMul
   -> a --maxV
   -> V2 a
   -> V3 a
-renderPoint logMul maxV v@(V2 y _x) =
+renderPoint mlogMul maxV v@(V2 y _x) =
   let
     theta | y < 0 = 2*pi - theta'
           | otherwise = theta'
       where theta' = acos $ (V2 0 1) `dot` normalize v
-    applyLogFilter n = log $ (n*logMul + 1)
+    applyLogFilter n =
+      case mlogMul of
+        Nothing -> n
+        Just logMul -> log $ (n*logMul + 1)
     h' = 360*theta/(2*pi)
     s' = 0.5
     v' = (*0.6) $ applyLogFilter (norm v) / applyLogFilter maxV
