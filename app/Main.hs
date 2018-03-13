@@ -178,11 +178,12 @@ main =
       do
         let command =
               unwords
-              [ "toUnboxed $ buildFieldRepa"
+              [ "toUnboxed $ runIdentity $ buildFieldRepa"
               , "(" ++ show fd ++ ")"
               , funcS
               ]
-        setImports [ "Data.Array.Repa"
+        setImports [ "Control.Monad.Identity"
+                   , "Data.Array.Repa"
                    , "Data.Vector.Unboxed"
                    , "Linear"
                    , "Prelude"
@@ -204,17 +205,18 @@ makeImage fd logMul vectorField =
   let
     aa' = _aa fd
     aaSq' = fromIntegral $ aa'*aa'
-    maxV = runIdentity $ R.foldAllP max 0 $ R.map norm $ vectorField
-    image' = runIdentity $ R.sumP $ R.map (renderPoint logMul maxV) vectorField
-    image =
-      runIdentity $ R.computeUnboxedP $
-      R.map (\v ->
-               let
-                 V3 r g b = fmap (round . (*255) . (/aaSq')) v
-               in (r,g,b)
-            ) image'
   in
-    maxV `seq` image' `deepSeqArray` image
+    runIdentity $
+      do
+        maxV <- R.foldAllP max 0 $ R.map norm $ vectorField
+        image' <- R.sumP $ R.map (renderPoint logMul maxV) vectorField
+        image <- R.computeUnboxedP $
+          R.map (\v ->
+                    let
+                      V3 r g b = fmap (round . (*255) . (/aaSq')) v
+                    in (r,g,b)
+                ) image'
+        maxV `seq` image' `deepSeqArray` return image
 
 renderPoint
   :: (Epsilon a, RealFrac a, Floating a, Ord a)
@@ -235,3 +237,4 @@ renderPoint mlogMul maxV v@(V2 y _x) =
     s' = 0.5
     v' = (*0.6) $ applyLogFilter (norm v) / applyLogFilter maxV
   in uncurryRGB V3 $ hsl h' s' v'
+{-# INLINABLE renderPoint #-}

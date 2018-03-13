@@ -57,10 +57,10 @@ generateCoords fd =
 {-# SPECIALIZE generateCoords :: FieldDescription Double -> (V3 Int -> V2 Double) #-}
 
 buildFieldRepa
-  :: forall a b. (Fractional a, Unbox b)
+  :: forall a b m. (Fractional a, Monad m, Unbox b)
   => FieldDescription a
   -> (V2 a -> V2 b)
-  -> Array U DIM3 (V2 b)
+  -> m (Array U DIM3 (V2 b))
 buildFieldRepa fd fg =
   let
     V2 resY resX = _res fd
@@ -68,8 +68,10 @@ buildFieldRepa fd fg =
     aa' = _aa fd
     dim = Z :. resY :. resX :. aa'*aa'
   in
-    runIdentity $ computeUnboxedP $ fromFunction dim
+    computeUnboxedP $ fromFunction dim
     (\(Z :. y :. x :. i) -> fg . coordinator $ (V3 y x i))
+
+{-# INLINABLE buildFieldRepa #-}
 
 buildField
   :: forall a b. (Unbox b, Fractional a)
