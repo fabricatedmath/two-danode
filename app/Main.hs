@@ -237,4 +237,5 @@ renderPoint mlogMul maxV v@(V2 y _x) =
     s' = 0.5
     v' = (*0.6) $ applyLogFilter (norm v) / applyLogFilter maxV
   in uncurryRGB V3 $ hsl h' s' v'
+
 {-# INLINABLE renderPoint #-}
