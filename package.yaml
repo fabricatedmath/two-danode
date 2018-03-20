@@ -21,11 +21,11 @@ description:         Please see the README on Github at <https://github.com/fabr
 
 dependencies:
 - base >= 4.7 && < 5
-- linear
-- vector
-- mtl
-- repa
+- hint
 - lens
+- linear
+- repa
+- vector
 
 library:
   source-dirs: src
@@ -43,6 +43,6 @@ executables:
     - -O2
     dependencies:
     - two-danode
-    - hint
     - colour
+    - mtl
     - repa-io

@@ -4,7 +4,6 @@
 module Field where
 
 import Control.Lens
-import Control.Monad.Identity (runIdentity)
 
 import Data.Array.Repa
 
@@ -22,7 +21,7 @@ data FieldDescription a =
   } deriving Show
 
 defaultFieldDescription :: Num a => FieldDescription a
-defaultFieldDescription = FromCenter (V2 1080 1920) (V2 0 0) 1 1
+defaultFieldDescription = FromCenter (V2 1080 1080) (V2 0 0) 1 1
 
 v2ToTuple :: Getter (V2 a) (a,a)
 v2ToTuple = to (\(V2 y x) -> (x,y))
@@ -70,7 +69,6 @@ buildFieldRepa fd fg =
   in
     computeUnboxedP $ fromFunction dim
     (\(Z :. y :. x :. i) -> fg . coordinator $ (V3 y x i))
-
 {-# INLINABLE buildFieldRepa #-}
 
 buildField

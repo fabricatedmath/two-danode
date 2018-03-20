@@ -1,31 +1,30 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Main where
-
-import Field
+module Main (main) where
 
 import Control.Lens
 import Control.Monad.Identity (runIdentity)
 
-import Data.Array.Repa (Array,DIM2,DIM3,U,Z(..),(:.)(..),deepSeqArray)
+import Data.Array.Repa (Array,DIM2,DIM3,U,deepSeqArray)
 import qualified Data.Array.Repa as R
 import Data.Array.Repa.IO.BMP (writeImageToBMP)
 
 import Data.Colour.RGBSpace
 import Data.Colour.RGBSpace.HSL
 
-import Data.Vector.Unboxed (Vector,Unbox)
+import Data.Vector.Unboxed (Unbox)
 
 import Data.Word (Word8)
 
 import Linear
 
-import Language.Haskell.Interpreter
-
 import System.Console.GetOpt
 import System.Environment (getArgs, getProgName)
 import System.Exit
 import System.IO
+
+import Field
+import Field.Hint
 
 data Options =
   Options
@@ -136,29 +135,6 @@ options =
     ) "Show help"
   ]
 
-getUsage :: IO String
-getUsage =
-  do
-    prg <- getProgName
-    return $ usageInfo prg options
-
-createFunction :: Options -> String
-createFunction opts
-  | _optPolar opts =
-    "(\\(V2 y x) -> let " ++
-    "r = sqrt $ x*x + y*y" ++ "; " ++
-    "theta = atan2 y x" ++ "; " ++
-    "rdot = " ++ _optR opts ++ "; " ++
-    "thetadot = " ++ _optT opts ++ "; " ++
-    "xdot = rdot*cos theta - r*sin theta * thetadot" ++ "; " ++
-    "ydot = rdot*sin theta + r*cos theta * thetadot" ++ "; " ++
-    "in V2 ydot xdot)"
-  | otherwise =
-    "(\\(V2 y x) -> let " ++
-    "xdot = " ++ _optF opts ++ "; " ++
-    "ydot = " ++ _optG opts ++ "; " ++
-    "in V2 ydot xdot)"
-
 main :: IO ()
 main =
   do
@@ -166,34 +142,14 @@ main =
     let (actions,_,_) = getOpt RequireOrder options args
     opts <- foldl (>>=) (return startOptions) actions
     let
-      funcS = createFunction opts
+      fieldS
+        | _optPolar opts = Polar (_optR opts) (_optT opts)
+        | otherwise = Cartesian (_optF opts) (_optG opts)
       file = _optFile opts
       fd = _optFD opts
-      dim = let V2 y x = _res fd
-                aa' = _aa fd
-            in Z :. y :. x :. aa'*aa' :: DIM3
       logMul = _optLogMultiplier opts
-    result <-
-      runInterpreter $
-      do
-        let command =
-              unwords
-              [ "toUnboxed $ runIdentity $ buildFieldRepa"
-              , "(" ++ show fd ++ ")"
-              , funcS
-              ]
-        setImports [ "Control.Monad.Identity"
-                   , "Data.Array.Repa"
-                   , "Data.Vector.Unboxed"
-                   , "Linear"
-                   , "Prelude"
-                   , "Field"
-                   ]
-        interpret command (as :: Vector (V2 Double))
-    case result of
-      Left err -> print err
-      Right v ->
-        writeImageToBMP file $ makeImage fd logMul $ R.fromUnboxed dim v
+    eSpace <- buildPhaseSpace fd fieldS
+    either (const $ pure ()) (writeImageToBMP file . makeImage fd logMul) eSpace
 
 makeImage
   :: (Epsilon a, Unbox a, RealFrac a, Floating a, Ord a)
@@ -237,5 +193,4 @@ renderPoint mlogMul maxV v@(V2 y _x) =
     s' = 0.5
     v' = (*0.6) $ applyLogFilter (norm v) / applyLogFilter maxV
   in uncurryRGB V3 $ hsl h' s' v'
-
 {-# INLINABLE renderPoint #-}
