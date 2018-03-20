@@ -75,3 +75,5 @@ time stack exec -- two-danode-exe -H 5 -r "(4096,4096)" -f 052.bmp -F "cos(2*y -
 #More Competition models for shared resources
 time stack exec -- two-danode-exe -F "x*(3-x - 2*y)" -G "y*(2-x-y)" -H 4 -m 10 -r "(4096,4096)" -f 053.bmp
 time stack exec -- two-danode-exe -F "x*(1-x/7) - x*y" -G "y*(1-y/4)-x*y" -H 10 -m 10 -r "(4096,4096)" -f 054.bmp
+
+time stack exec -- two-danode-exe -F "sin(13*x)*cos(10*y*x)" -G "sin(5*x)*cos (10*y*x)" -H 2 -r "(4096,4096)" -f 055.bmp

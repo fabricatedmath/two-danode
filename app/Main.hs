@@ -149,7 +149,7 @@ main =
       fd = _optFD opts
       logMul = _optLogMultiplier opts
     eSpace <- buildPhaseSpace fd fieldS
-    either (const $ pure ()) (writeImageToBMP file . makeImage fd logMul) eSpace
+    either print (writeImageToBMP file . makeImage fd logMul) eSpace
 
 makeImage
   :: (Epsilon a, Unbox a, RealFrac a, Floating a, Ord a)
