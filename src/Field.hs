@@ -14,10 +14,10 @@ import Linear
 
 data FieldDescription a =
   FromCenter
-  { _res :: !(V2 Int)
-  , _center :: !(V2 a)
-  , _h :: !a
-  , _aa :: Int
+  { _fdRes :: !(V2 Int)
+  , _fdCenter :: !(V2 a)
+  , _fdHeight :: !a
+  , _fdAA :: Int
   } deriving Show
 
 defaultFieldDescription :: Num a => FieldDescription a
@@ -34,12 +34,12 @@ makeLenses ''FieldDescription
 generateCoords :: Fractional a => FieldDescription a -> (V3 Int -> V2 a)
 generateCoords fd =
   let
-    h' = _h fd
-    res'@(V2 resY' resX') = fmap fromIntegral $ _res fd
+    h' = _fdHeight fd
+    res'@(V2 resY' resX') = fmap fromIntegral $ _fdRes fd
     w = let aspect = resX' / resY' in aspect * h'
-    offset' = _center fd - V2 h' w
+    offset' = _fdCenter fd - V2 h' w
     multiplier' = 2 * V2 h' w / res'
-    aa' = _aa fd
+    aa' = _fdAA fd
     aaSq = aa'*aa'
     aaSq' = fromIntegral aaSq
   in
@@ -55,22 +55,6 @@ generateCoords fd =
 {-# SPECIALIZE generateCoords :: FieldDescription Float -> (V3 Int -> V2 Float) #-}
 {-# SPECIALIZE generateCoords :: FieldDescription Double -> (V3 Int -> V2 Double) #-}
 
-buildFieldRepa
-  :: forall a b m. (Fractional a, Monad m, Unbox b)
-  => FieldDescription a
-  -> (V2 a -> V2 b)
-  -> m (Array U DIM3 (V2 b))
-buildFieldRepa fd fg =
-  let
-    V2 resY resX = _res fd
-    coordinator = generateCoords fd
-    aa' = _aa fd
-    dim = Z :. resY :. resX :. aa'*aa'
-  in
-    computeUnboxedP $ fromFunction dim
-    (\(Z :. y :. x :. i) -> fg . coordinator $ (V3 y x i))
-{-# INLINABLE buildFieldRepa #-}
-
 buildField
   :: forall a b. (Unbox b, Fractional a)
   => FieldDescription a
@@ -78,12 +62,12 @@ buildField
   -> Vector (V2 b)
 buildField fd fg =
   let
-    aa' = _aa fd
+    aa' = _fdAA fd
     aaSq = aa'*aa'
     coordinator :: Int -> V2 a
     coordinator i =
       generateCoords fd $
       V3 (i `div` (resX*aaSq)) (i `rem` (resX*aaSq) `div` aaSq) (i `rem` aaSq)
-    V2 resY resX = _res fd
+    V2 resY resX = _fdRes fd
   in
     UV.generate (resY*resX*aaSq) $ fg . coordinator

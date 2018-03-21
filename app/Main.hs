@@ -24,7 +24,7 @@ import System.Exit
 import System.IO
 
 import Field
-import Field.Hint
+import Field.Hint.Repa
 
 data Options =
   Options
@@ -92,30 +92,30 @@ options =
                 ,"Default: " ++ show (_optFile startOptions)]
   , Option "a" ["aa"]
     (ReqArg
-      (\arg opt -> pure $ optFD.aa .~ read arg $ opt)
+      (\arg opt -> pure $ optFD.fdAA .~ read arg $ opt)
       "Int")
     $ unlines $ ["Anti-Aliasing"
-                ,"Default: " ++ show (startOptions ^. optFD.aa)]
+                ,"Default: " ++ show (startOptions ^. optFD.fdAA)]
   , Option "r" ["res"]
     (ReqArg
-     (\arg opt -> pure $ optFD.res .~ read arg ^. tupleToV2 $ opt)
+     (\arg opt -> pure $ optFD.fdRes .~ read arg ^. tupleToV2 $ opt)
       "(Int,Int)")
     $ unlines $
     ["Resolution of output image, needs quotes in cmd line"
-    ,"Default: " ++ show (startOptions ^. optFD.res.v2ToTuple.to show)]
+    ,"Default: " ++ show (startOptions ^. optFD.fdRes.v2ToTuple.to show)]
   , Option "c" ["center"]
     (ReqArg
-     (\arg opt -> pure $ optFD.center .~ read arg ^. tupleToV2 $ opt)
+     (\arg opt -> pure $ optFD.fdCenter .~ read arg ^. tupleToV2 $ opt)
       "(Double,Double)")
     $ unlines $
     ["Center of field View, needs quotes in cmd line"
-    ,"Default: " ++ show (startOptions ^. optFD.center.v2ToTuple.to show)]
+    ,"Default: " ++ show (startOptions ^. optFD.fdCenter.v2ToTuple.to show)]
   , Option "H" ["height"]
     (ReqArg
-     (\arg opt -> pure $ optFD.h .~ read arg $ opt)
+     (\arg opt -> pure $ optFD.fdHeight .~ read arg $ opt)
       "Double")
     $ unlines $ ["Height of field view"
-                ,"Default: " ++ show (startOptions ^. optFD.h)]
+                ,"Default: " ++ show (startOptions ^. optFD.fdHeight)]
   , Option "m" ["multiplier"]
     (ReqArg
      (\arg opt -> pure $ optLogMultiplier .~ Just (read arg)  $ opt)
@@ -159,7 +159,7 @@ makeImage
   -> Array U DIM2 (Word8,Word8,Word8)
 makeImage fd logMul vectorField =
   let
-    aa' = _aa fd
+    aa' = _fdAA fd
     aaSq' = fromIntegral $ aa'*aa'
   in
     runIdentity $
