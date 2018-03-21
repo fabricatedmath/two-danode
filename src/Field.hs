@@ -5,8 +5,6 @@ module Field where
 
 import Control.Lens
 
-import Data.Array.Repa
-
 import Data.Vector.Unboxed (Vector)
 import Data.Vector.Unboxed as UV
 
