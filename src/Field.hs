@@ -18,6 +18,8 @@ data FieldDescription a =
   , _fdAA :: Int
   } deriving Show
 
+makeLenses ''FieldDescription
+
 defaultFieldDescription :: Num a => FieldDescription a
 defaultFieldDescription = FromCenter (V2 1080 1080) (V2 0 0) 1 1
 
@@ -26,8 +28,6 @@ v2ToTuple = to (\(V2 y x) -> (x,y))
 
 tupleToV2 :: Getter (a,a) (V2 a)
 tupleToV2 = to (\(x,y) -> V2 y x)
-
-makeLenses ''FieldDescription
 
 generateCoords :: Fractional a => FieldDescription a -> (V3 Int -> V2 a)
 generateCoords fd =
