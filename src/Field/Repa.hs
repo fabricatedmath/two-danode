@@ -8,7 +8,7 @@ import Linear
 import Field
 
 buildFieldRepa
-  :: (Fractional a, Monad m, Unbox b)
+  :: (Fractional a, RealFrac a, Monad m, Unbox b)
   => FieldDescription a
   -> (V2 a -> V2 b)
   -> m (Array U DIM3 (V2 b))

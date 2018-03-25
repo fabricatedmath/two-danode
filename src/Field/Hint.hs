@@ -1,4 +1,24 @@
+{-# LANGUAGE DeriveGeneric #-}
+
 module Field.Hint where
+
+import Data.Aeson
+  (ToJSON, FromJSON, toEncoding, defaultOptions, genericToEncoding)
+
+import GHC.Generics (Generic)
+
+import Field
+
+data HintDescr a =
+  HintDescr
+  { _hintDescrFD :: FieldDescription a
+  , _hintDescrFS :: FieldStrings
+  } deriving (Generic, Show, Read)
+
+instance ToJSON a => ToJSON (HintDescr a) where
+  toEncoding = genericToEncoding defaultOptions
+
+instance FromJSON a => FromJSON (HintDescr a)
 
 data FieldStrings =
   Cartesian
@@ -8,7 +28,12 @@ data FieldStrings =
   Polar
   { _rString :: String
   , _tString :: String
-  } deriving (Show, Read)
+  } deriving (Generic, Show, Read)
+
+instance ToJSON FieldStrings where
+  toEncoding = genericToEncoding defaultOptions
+
+instance FromJSON FieldStrings
 
 createFunction :: FieldStrings -> String
 createFunction (Polar rs ts) =

@@ -2,161 +2,51 @@
 
 module Main (main) where
 
-import Control.Lens
 import Control.Monad.Identity (runIdentity)
 
-import Data.Array.Repa (Array,DIM2,DIM3,U,deepSeqArray)
+import Codec.Picture
+
+import Data.Array.Repa (Array,DIM2,DIM3,U,deepSeqArray,(:.)(..),Z(..))
 import qualified Data.Array.Repa as R
-import Data.Array.Repa.IO.BMP (writeImageToBMP)
 
 import Data.Colour.RGBSpace
 import Data.Colour.RGBSpace.HSL
 
+import Data.Vector (convert)
+import qualified Data.Vector.Storable as VS
 import Data.Vector.Unboxed (Unbox)
 
 import Data.Word (Word8)
 
 import Linear
 
-import System.Console.GetOpt
-import System.Environment (getArgs, getProgName)
-import System.Exit
-import System.IO
+import Config
 
 import Field
+import Field.Hint
 import Field.Hint.Repa
-
-data Options =
-  Options
-  { _optFD :: FieldDescription Double
-  , _optFile :: FilePath
-  , _optLogMultiplier :: Maybe Double
-  , _optPolar :: Bool
-  , _optR :: String
-  , _optT :: String
-  , _optF :: String
-  , _optG :: String
-  } deriving Show
-
-makeLenses ''Options
-
-startOptions :: Options
-startOptions =
-  Options
-  { _optFD = defaultFieldDescription
-  , _optF = "y"
-  , _optG = "-sin x"
-  , _optPolar = False
-  , _optR = "r*(1-r*r)"
-  , _optT = "1"
-  , _optLogMultiplier = Nothing
-  , _optFile = "default.bmp"
-  }
-
-options :: [OptDescr (Options -> IO Options)]
-options =
-  [ Option "F" []
-    (ReqArg
-     (\arg opt -> pure $ optF .~ arg $ opt)
-      "String")
-    $ unlines $ ["Function String for 'x dot', F (x,y) = _"
-                ,"Default: " ++ show (_optF startOptions)]
-  , Option "G" []
-    (ReqArg
-     (\arg opt -> pure $ optG .~ arg $ opt)
-      "String")
-    $ unlines $ ["Function String for 'y dot', G (x,y) = _"
-                ,"Default: " ++ show (_optG startOptions)]
-  , Option "P" []
-    (NoArg
-     (\opt -> pure $ optPolar .~ True $ opt))
-    $ unlines $ ["Set to use polar coordinates in terms of r and theta"
-                ,"as r-dot and theta-dot"]
-  , Option "R" []
-    (ReqArg
-     (\arg opt -> pure $ optR .~ arg $ opt)
-      "String")
-    $ unlines $ ["Function String for polar 'r dot', R (r,theta) = _"
-                ,"Default: " ++ show (_optR startOptions)]
-  , Option "T" []
-    (ReqArg
-     (\arg opt -> pure $ optT .~ arg $ opt)
-      "String")
-    $ unlines $ ["Function String for polar 'theta dot', T (r,theta) = _"
-                ,"Default: " ++ show (_optT startOptions)]
-  , Option "f" []
-    (ReqArg
-     (\arg opt -> pure $ optFile .~ arg $ opt)
-      "File")
-    $ unlines $ ["BMP file save name"
-                ,"Default: " ++ show (_optFile startOptions)]
-  , Option "a" ["aa"]
-    (ReqArg
-      (\arg opt -> pure $ optFD.fdAA .~ read arg $ opt)
-      "Int")
-    $ unlines $ ["Anti-Aliasing"
-                ,"Default: " ++ show (startOptions ^. optFD.fdAA)]
-  , Option "r" ["res"]
-    (ReqArg
-     (\arg opt -> pure $ optFD.fdRes .~ read arg ^. tupleToV2 $ opt)
-      "(Int,Int)")
-    $ unlines $
-    ["Resolution of output image, needs quotes in cmd line"
-    ,"Default: " ++ show (startOptions ^. optFD.fdRes.v2ToTuple.to show)]
-  , Option "c" ["center"]
-    (ReqArg
-     (\arg opt -> pure $ optFD.fdCenter .~ read arg ^. tupleToV2 $ opt)
-      "(Double,Double)")
-    $ unlines $
-    ["Center of field View, needs quotes in cmd line"
-    ,"Default: " ++ show (startOptions ^. optFD.fdCenter.v2ToTuple.to show)]
-  , Option "H" ["height"]
-    (ReqArg
-     (\arg opt -> pure $ optFD.fdHeight .~ read arg $ opt)
-      "Double")
-    $ unlines $ ["Height of field view"
-                ,"Default: " ++ show (startOptions ^. optFD.fdHeight)]
-  , Option "m" ["multiplier"]
-    (ReqArg
-     (\arg opt -> pure $ optLogMultiplier .~ Just (read arg)  $ opt)
-      "Double")
-    $ unlines $
-    ["Multiplier of log function to convert colors,"
-    ,"a higher number means less intensity variability "
-    ,"between low and high magnitude vectors"
-    ,"Default: " ++ show (startOptions ^. optLogMultiplier)]
-  , Option "h" ["help"]
-    (NoArg
-      (\_ -> do
-          prg <- getProgName
-          hPutStrLn stderr $ usageInfo prg options
-          exitWith ExitSuccess
-      )
-    ) "Show help"
-  ]
 
 main :: IO ()
 main =
   do
-    args <- getArgs
-    let (actions,_,_) = getOpt RequireOrder options args
-    opts <- foldl (>>=) (return startOptions) actions
+    descr <- loadConfigFromArgs
     let
-      fieldS
-        | _optPolar opts = Polar (_optR opts) (_optT opts)
-        | otherwise = Cartesian (_optF opts) (_optG opts)
-      file = _optFile opts
-      fd = _optFD opts
-      logMul = _optLogMultiplier opts
-    eSpace <- buildPhaseSpace fd fieldS
-    either print (writeImageToBMP file . makeImage fd logMul) eSpace
+      hintDescr = _optHintDescr descr
+      fd = _hintDescrFD hintDescr
+      (file,_mext) = _optDescrFile descr
+      logMul = _optDescrLogMultiplier descr
+    eSpace <- buildPhaseSpace hintDescr
+    either
+      print
+      (writePng (file ++ ".png") . repaToImage . makeImage fd logMul)
+      eSpace
 
 makeImage
   :: (Epsilon a, Unbox a, RealFrac a, Floating a, Ord a)
   => FieldDescription a
   -> Maybe a --logMul
   -> Array U DIM3 (V2 a)
-  -> Array U DIM2 (Word8,Word8,Word8)
+  -> Array U DIM2 (V3 Word8)
 makeImage fd logMul vectorField =
   let
     aa' = _fdAA fd
@@ -167,11 +57,7 @@ makeImage fd logMul vectorField =
         maxV <- R.foldAllP max 0 $ R.map norm $ vectorField
         image' <- R.sumP $ R.map (renderPoint logMul maxV) vectorField
         image <- R.computeUnboxedP $
-          R.map (\v ->
-                    let
-                      V3 r g b = fmap (round . (*255) . (/aaSq')) v
-                    in (r,g,b)
-                ) image'
+          R.map (fmap (round . (*255) . (/aaSq'))) image'
         maxV `seq` image' `deepSeqArray` return image
 
 renderPoint
@@ -194,3 +80,11 @@ renderPoint mlogMul maxV v@(V2 y _x) =
     v' = (*0.6) $ applyLogFilter (norm v) / applyLogFilter maxV
   in uncurryRGB V3 $ hsl h' s' v'
 {-# INLINABLE renderPoint #-}
+
+repaToImage :: Array U DIM2 (V3 Word8) -> Image PixelRGB8
+repaToImage arr =
+  let
+    (Z :. ydim :. xdim) = R.extent arr
+    v = convert . R.toUnboxed $ arr :: VS.Vector (V3 Word8)
+  in
+    Image ydim xdim $ VS.unsafeCast v

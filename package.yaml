@@ -26,6 +26,8 @@ dependencies:
 - linear
 - repa
 - vector
+- aeson
+- linear-instances
 
 library:
   source-dirs: src
@@ -46,3 +48,7 @@ executables:
     - colour
     - mtl
     - repa-io
+    - JuicyPixels
+    - aeson-pretty
+    - bytestring
+    #- pipes-graphics
