@@ -79,3 +79,5 @@ time stack exec -- two-danode-exe --write-json -F "x*(3-x - 2*y)" -G "y*(2-x-y)"
 time stack exec -- two-danode-exe --write-json -F "x*(1-x/7) - x*y" -G "y*(1-y/4)-x*y" -H 10 -m 10 -r "$res" -f ${2}054.png
 
 time stack exec -- two-danode-exe --write-json -F "sin(13*x)*cos(10*y*x)" -G "sin(5*x)*cos (10*y*x)" -H 2 -r "$res" -f ${2}055.png
+
+time stack exec -- two-danode-exe --write-json -R "r" -T "cos (r*20)*sin (theta*20)" -H 1 -r "$res" -f ${2}056.png

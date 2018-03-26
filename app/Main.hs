@@ -33,8 +33,8 @@ main =
     let
       hintDescr = _optHintDescr descr
       fd = _hintDescrFD hintDescr
-      (file,_mext) = _optDescrFile descr
-      logMul = _optDescrLogMultiplier descr
+      (file,_mext) = _optFile descr
+      logMul = _optLogMultiplier descr
     eSpace <- buildPhaseSpace hintDescr
     either
       print

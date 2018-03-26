@@ -1,6 +1,5 @@
 module Field.Hint.Repa
   ( buildPhaseSpace, InterpreterError(..)
-  , FieldStrings(..), FieldDescription(..)
   ) where
 
 import Data.Array.Repa hiding ((++))

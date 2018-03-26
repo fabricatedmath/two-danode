@@ -3,18 +3,21 @@
 
 module Config
   ( loadConfigFromArgs, Descr(..)
-  , optHintDescr, optDescrLogMultiplier, optDescrFile
+  , optHintDescr, optLogMultiplier, optFile
   , breakFileExtension
   )
 where
+
+import Control.Arrow ((***))
+import Control.Lens
+import Control.Monad (when)
 
 import Data.Aeson (decode')
 import Data.Aeson.Encode.Pretty (encodePretty)
 import qualified Data.ByteString.Lazy.Char8 as BS
 
-import Control.Arrow ((***))
-import Control.Lens
-import Control.Monad (when)
+import Data.Either (partitionEithers)
+import Data.Maybe (fromMaybe, listToMaybe)
 
 import System.Console.GetOpt
 import System.Environment (getArgs, getProgName)
@@ -27,84 +30,61 @@ import Field.Hint
 data Descr =
   Descr
   { _optHintDescr :: HintDescr Double
-  , _optDescrLogMultiplier :: Maybe Double
-  , _optDescrFile :: (FilePath, Maybe String)
-  } deriving (Show, Read)
-
-data Options =
-  Options
-  { _optFD :: FieldDescription Double
-  , _optFile :: (FilePath, Maybe String)
   , _optLogMultiplier :: Maybe Double
-  , _optPolar :: Bool
-  , _optR :: String
-  , _optT :: String
-  , _optF :: String
-  , _optG :: String
-  , _optReadJSON :: Maybe FilePath
+  , _optFile :: (FilePath, Maybe String)
   , _optWriteJSON :: Bool
   , _optStop :: Bool
   } deriving (Show, Read)
 
-optionsToDescr :: Options -> Descr
-optionsToDescr o =
-  let
-    hintDescr =
-      let
-        fieldStrings
-          | _optPolar o =
-            Polar
-            { _rString = _optR o
-            , _tString = _optT o
-            }
-          | otherwise =
-            Cartesian
-            { _fString = _optF o
-            , _gString = _optG o
-            }
-      in
-        HintDescr
-        { _hintDescrFD = _optFD o
-        , _hintDescrFS = fieldStrings
-        }
-  in
-    Descr
-    { _optHintDescr = hintDescr
-    , _optDescrLogMultiplier = _optLogMultiplier o
-    , _optDescrFile = _optFile o
-    }
-
 makeLenses ''Descr
-makeLenses ''Options
+
+defaultDescr :: Descr
+defaultDescr =
+  Descr
+  { _optHintDescr = defaultHintDescr
+  , _optLogMultiplier = Nothing
+  , _optFile = ("default", Just ".png")
+  , _optWriteJSON = False
+  , _optStop = False
+  }
+
+fromLeft :: a -> Either a b -> a
+fromLeft a (Right _) = a
+fromLeft _ (Left a) = a
+
+fromRight :: b -> Either a b -> b
+fromRight _ (Right b) = b
+fromRight b (Left _) = b
 
 loadConfigFromArgs :: IO Descr
 loadConfigFromArgs =
   do
     args <- getArgs
     let (actions,_,_) = getOpt RequireOrder options args
-    opts <- foldl (>>=) (pure startOptions) actions
+        (lefts,rights) = partitionEithers actions
     descr <-
       do
-        let descr = optionsToDescr opts
-        case _optReadJSON opts of
-          Just path ->
-            do
-              mjson <- decode' <$> BS.readFile path
-              case mjson of
-                Nothing -> die "Failed to read JSON file"
-                Just json -> pure $ (optHintDescr .~ json) descr
-          Nothing -> pure descr
-
-    when (_optWriteJSON opts) $
+        let descr = defaultDescr
+        descr' <-
+          case listToMaybe lefts of
+            Just fp ->
+              do
+                mjson <- decode' <$> BS.readFile fp
+                case mjson of
+                  Nothing -> die "Failed to read JSON file"
+                  Just json -> pure $ (optHintDescr .~ json) descr
+            Nothing -> pure descr
+        foldl (>>=) (pure descr') rights
+    when (_optWriteJSON descr) $
       do
-        BS.writeFile (fst (_optFile opts) ++ ".json") $
+        BS.writeFile (fst (_optFile descr) ++ ".json") $
           encodePretty (_optHintDescr descr)
-    case _optStop opts of
-      True ->
-        do
-          putStrLn "Stopping due to flag"
-          exitSuccess
-      False -> pure $ optionsToDescr opts
+        putStrLn "Wrote json file"
+    when (_optStop descr) $
+      do
+        putStrLn "Stopping due to flag"
+        exitSuccess
+    return descr
 
 breakFileExtension :: FilePath -> (FilePath, Maybe String)
 breakFileExtension fp =
@@ -115,114 +95,152 @@ breakFileExtension fp =
       reverse *** (reverse . drop 1) $ break (=='.') $ reverse filename
   in (path ++ name, if null extension then Nothing else Just extension)
 
-
-startOptions :: Options
-startOptions =
-  Options
-  { _optFD = defaultFieldDescription
-  , _optF = "y"
-  , _optG = "-sin x"
-  , _optPolar = False
-  , _optR = "r*(1-r*r)"
-  , _optT = "1"
-  , _optLogMultiplier = Nothing
-  , _optFile = ("default", Just ".png")
-  , _optReadJSON = Nothing
-  , _optWriteJSON = False
-  , _optStop = False
-  }
-
-options :: [OptDescr (Options -> IO Options)]
+options :: [OptDescr (Either FilePath (Descr -> IO Descr))]
 options =
   [ Option "F" []
     (ReqArg
-     (\arg opt -> pure $ optF .~ arg $ opt)
+      (\arg ->
+         pure (\opt ->
+                 pure $ optHintDescr.hintDescrFS %~
+                 (\a ->
+                    Left $ fString .~ arg $ fromLeft defaultCartesian a
+                 ) $ opt
+              )
+      )
       "String")
     $ unlines $ ["Function String for 'x dot', F (x,y) = _"
-                ,"Default: " ++ show (_optF startOptions)]
+                ,"Default: " ++ show (defaultCartesian ^. fString)]
   , Option "G" []
     (ReqArg
-     (\arg opt -> pure $ optG .~ arg $ opt)
+      (\arg ->
+         pure (\opt ->
+                  pure $ optHintDescr.hintDescrFS %~
+                  (\a ->
+                     Left $ gString .~ arg $ fromLeft defaultCartesian a
+                  ) $ opt
+              )
+      )
       "String")
     $ unlines $ ["Function String for 'y dot', G (x,y) = _"
-                ,"Default: " ++ show (_optG startOptions)]
+                ,"Default: " ++ show (defaultCartesian ^. gString)]
   , Option "P" []
     (NoArg
-     (\opt -> pure $ optPolar .~ True $ opt))
+      (pure
+        (\opt -> pure $ optHintDescr.hintDescrFS .~ Right defaultPolar $ opt)
+      )
+    )
     $ unlines $ ["Set to use polar coordinates in terms of r and theta"
                 ,"as r-dot and theta-dot"]
   , Option "R" []
     (ReqArg
-     (\arg opt -> pure $ optR .~ arg $ opt)
+      (\arg ->
+         pure (\opt ->
+                  pure $ optHintDescr.hintDescrFS %~
+                  (\a ->
+                     Right $ rString .~ arg $ fromRight defaultPolar a
+                  ) $ opt
+              )
+      )
       "String")
     $ unlines $ ["Function String for polar 'r dot', R (r,theta) = _"
-                ,"Default: " ++ show (_optR startOptions)]
+                ,"Default: " ++ show (defaultPolar ^. rString)]
   , Option "T" []
     (ReqArg
-     (\arg opt -> pure $ optT .~ arg $ opt)
+      (\arg ->
+         pure (\opt ->
+                  pure $ optHintDescr.hintDescrFS %~
+                  (\a ->
+                     Right $ rString .~ arg $ fromRight defaultPolar a
+                  ) $ opt
+              )
+      )
       "String")
     $ unlines $ ["Function String for polar 'theta dot', T (r,theta) = _"
-                ,"Default: " ++ show (_optT startOptions)]
+                ,"Default: " ++ show (defaultPolar ^. tString)]
   , Option "f" []
     (ReqArg
-     (\arg opt -> pure $ optFile .~ breakFileExtension arg $ opt)
+      (\arg -> pure (\opt -> pure $ optFile .~ breakFileExtension arg $ opt))
       "File")
     $ unlines $ ["PNG file save name"
-                ,"Default: " ++ show (_optFile startOptions)]
+                ,"Default: " ++ show (
+                    let (pre,suf) = defaultDescr ^. optFile
+                    in pre ++ fromMaybe "" suf)]
   , Option "a" ["aa"]
     (ReqArg
-      (\arg opt -> pure $ optFD.fdAA .~ read arg $ opt)
+      (\arg ->
+         pure (\opt ->
+                  pure $ optHintDescr.hintDescrFD.fdAA .~ read arg $ opt
+              )
+      )
       "Int")
     $ unlines $ ["Anti-Aliasing"
-                ,"Default: " ++ show (startOptions ^. optFD.fdAA)]
+                ,"Default: " ++
+                 show (defaultDescr ^. optHintDescr.hintDescrFD.fdAA)]
   , Option "r" ["res"]
     (ReqArg
-     (\arg opt -> pure $ optFD.fdRes .~ read arg ^. tupleToV2 $ opt)
+      (\arg ->
+         pure (\opt ->
+                 pure $
+                 optHintDescr.hintDescrFD.fdRes .~ read arg ^. tupleToV2 $ opt
+              )
+      )
       "(Int,Int)")
     $ unlines $
     ["Resolution of output image, needs quotes in cmd line"
-    ,"Default: " ++ show (startOptions ^. optFD.fdRes.v2ToTuple.to show)]
+    ,"Default: " ++
+      show (defaultDescr ^. optHintDescr.hintDescrFD.fdRes.v2ToTuple.to show)]
   , Option "c" ["center"]
     (ReqArg
-     (\arg opt -> pure $ optFD.fdCenter .~ read arg ^. tupleToV2 $ opt)
+     (\arg ->
+        pure (\opt ->
+                pure $
+                optHintDescr.hintDescrFD.fdCenter .~ read arg ^. tupleToV2 $ opt
+             )
+     )
       "(Double,Double)")
     $ unlines $
     ["Center of field View, needs quotes in cmd line"
-    ,"Default: " ++ show (startOptions ^. optFD.fdCenter.v2ToTuple.to show)]
+    ,"Default: " ++
+     show (defaultDescr ^. optHintDescr.hintDescrFD.fdCenter.v2ToTuple.to show)]
   , Option "H" ["height"]
     (ReqArg
-     (\arg opt -> pure $ optFD.fdHeight .~ read arg $ opt)
+     (\arg ->
+        pure (\opt ->
+                pure $ optHintDescr.hintDescrFD.fdHeight .~ read arg $ opt
+             )
+     )
       "Double")
     $ unlines $ ["Height of field view"
-                ,"Default: " ++ show (startOptions ^. optFD.fdHeight)]
+                ,"Default: " ++
+                 show (defaultDescr ^. optHintDescr.hintDescrFD.fdHeight)]
   , Option "m" ["multiplier"]
     (ReqArg
-     (\arg opt -> pure $ optLogMultiplier .~ Just (read arg)  $ opt)
+     (\arg -> pure (\opt -> pure $ optLogMultiplier .~ Just (read arg) $ opt))
       "Double")
     $ unlines $
     ["Multiplier of log function to convert colors,"
     ,"a higher number means less intensity variability "
     ,"between low and high magnitude vectors"
-    ,"Default: " ++ show (startOptions ^. optLogMultiplier)]
+    ,"Default: " ++ show (defaultDescr ^. optLogMultiplier)]
   , Option "" ["write-json"]
     (NoArg
-      (\opt -> pure $ optWriteJSON .~ True $ opt)
+      (pure (\opt -> pure $ optWriteJSON .~ True $ opt))
     ) "Write JSON description of field equations"
   , Option "" ["read-json"]
     (ReqArg
-      (\arg opt -> pure $ optReadJSON .~ Just arg $ opt)
+      (\arg -> Left arg)
       "FILE")
     "Read JSON description of field equations"
   , Option "" ["stop"]
     (NoArg
-      (\opt -> pure $ optStop .~ True $ opt)
+      (pure (\opt -> pure $ optStop .~ True $ opt))
     ) "Don't generate field image"
   , Option "h" ["help"]
     (NoArg
-      (\_ -> do
+      (pure (\_ -> do
           prg <- getProgName
           hPutStrLn stderr $ usageInfo prg options
           exitWith ExitSuccess
-      )
+      ))
     ) "Show help"
   ]
