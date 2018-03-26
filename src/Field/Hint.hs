@@ -1,6 +1,9 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Field.Hint where
+
+import Control.Lens
 
 import Data.Aeson
   (ToJSON, FromJSON, toEncoding, defaultOptions, genericToEncoding)
@@ -34,6 +37,8 @@ instance ToJSON FieldStrings where
   toEncoding = genericToEncoding defaultOptions
 
 instance FromJSON FieldStrings
+
+makeLenses ''HintDescr
 
 createFunction :: FieldStrings -> String
 createFunction (Polar rs ts) =
