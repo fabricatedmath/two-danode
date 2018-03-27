@@ -28,6 +28,8 @@ dependencies:
 - vector
 - aeson
 - linear-instances
+- aeson-pretty
+- bytestring
 
 library:
   source-dirs: src
@@ -49,6 +51,5 @@ executables:
     - mtl
     - repa-io
     - JuicyPixels
-    - aeson-pretty
-    - bytestring
+
     #- pipes-graphics
