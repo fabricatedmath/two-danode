@@ -72,9 +72,10 @@ loadHintDescrFromArgs outfp args =
         foldl (>>=) (pure descr') rights
     when (_optWriteJSON descr) $
       do
-        BS.writeFile (outfp ++ ".json") $
+        let fileName = outfp ++ ".json"
+        BS.writeFile fileName $
           encodePretty (_optDescr descr)
-        putStrLn "Wrote json file"
+        putStrLn $ "Wrote json file to: " ++ show fileName
     when (_optStop descr) $
       do
         putStrLn "Stopping due to flag"
