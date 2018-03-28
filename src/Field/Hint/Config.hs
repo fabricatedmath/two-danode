@@ -42,7 +42,7 @@ defaultDescr =
   , _optStop = False
   }
 
---TODO: base 4.11 introduced these into Data.Maybe
+--TODO: base 4.11 introduced these
 fromLeft :: a -> Either a b -> a
 fromLeft a (Right _) = a
 fromLeft _ (Left a) = a
