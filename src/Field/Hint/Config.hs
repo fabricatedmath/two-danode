@@ -4,6 +4,7 @@
 module Field.Hint.Config
   ( loadHintDescrFromArgs
   , hintDescrOptions
+  , HintOption
   )
 where
 
@@ -22,6 +23,8 @@ import System.Exit
 import Field
 import Field.Hint
 
+type HintOption a = Either FilePath (Descr a -> IO (Descr a))
+
 data Descr a =
   Descr
   { _optDescr :: HintDescr a
@@ -39,7 +42,7 @@ defaultDescr =
   , _optStop = False
   }
 
---TODO: base 4.11 introduced theses into Data.Maybe
+--TODO: base 4.11 introduced these into Data.Maybe
 fromLeft :: a -> Either a b -> a
 fromLeft a (Right _) = a
 fromLeft _ (Left a) = a
@@ -55,7 +58,7 @@ loadHintDescrFromArgs
   -> IO (HintDescr a)
 loadHintDescrFromArgs outfp args =
   do
-    let (actions,_,_) = getOpt RequireOrder hintDescrOptions args
+    let (actions,_,_) = getOpt Permute hintDescrOptions args
         (lefts,rights) = partitionEithers actions
     descr <-
       do
@@ -84,7 +87,7 @@ loadHintDescrFromArgs outfp args =
 
 hintDescrOptions
   :: forall a. (RealFrac a, Read a, Show a)
-  => [OptDescr (Either FilePath (Descr a -> IO (Descr a)))]
+  => [OptDescr (HintOption a)]
 hintDescrOptions =
   let def :: HintDescr a
       def = defaultHintDescr
