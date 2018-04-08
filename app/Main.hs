@@ -26,6 +26,8 @@ import Field
 import Field.Hint
 import Field.Hint.Repa
 
+import Pipes.Graphics
+
 main :: IO ()
 main =
   do
@@ -81,10 +83,12 @@ renderPoint mlogMul maxV v@(V2 y _x) =
   in uncurryRGB V3 $ hsl h' s' v'
 {-# INLINABLE renderPoint #-}
 
+{-
 repaToImage :: Array U DIM2 (V3 Word8) -> Image PixelRGB8
 repaToImage arr =
   let
     (Z :. ydim :. xdim) = R.extent arr
     v = convert . R.toUnboxed $ arr :: VS.Vector (V3 Word8)
   in
-    Image ydim xdim $ VS.unsafeCast v
+    Image xdim ydim $ VS.unsafeCast v
+-}

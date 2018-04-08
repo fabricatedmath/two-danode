@@ -30,6 +30,7 @@ dependencies:
 - linear-instances
 - aeson-pretty
 - bytestring
+- pipes-graphics-repa
 
 library:
   source-dirs: src
