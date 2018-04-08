@@ -38,8 +38,8 @@ resolver: lts-9.21
 # will not be run. This is useful for tweaking upstream packages.
 packages:
 - .
-- ../pipes-graphics/pipes-graphics-repa
-- ../linear-instances
+#- ../pipes-graphics/pipes-graphics-repa
+#- ../linear-instances
 #- ../pipes-graphics
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
@@ -47,6 +47,14 @@ extra-deps:
 - ffmpeg-light-0.12.0.1
 - repa-3.4.1.3
 - repa-io-3.4.1.1
+
+- git: https://github.com/fabricatedmath/linear-instances.git
+  commit: f87581dbbc00325ee1914558000b0d529b48a311
+
+- git: https://github.com/fabricatedmath/pipes-graphics
+  commit: 0d2e8120a2b483083289a122eb526f41587218b2
+  subdirs:
+    - pipes-graphics-repa
 # - tasty-hedgehog-0.1.0.1
 # - ffmpeg-light-0.12.0.1
 
