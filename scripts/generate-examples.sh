@@ -81,3 +81,7 @@ time stack exec -- two-danode-exe --write-json -F "x*(1-x/7) - x*y" -G "y*(1-y/4
 time stack exec -- two-danode-exe --write-json -F "sin(13*x)*cos(10*y*x)" -G "sin(5*x)*cos (10*y*x)" -H 2 -r "$res" -f ${2}055.png
 
 time stack exec -- two-danode-exe --write-json -R "r" -T "cos (r*20)*sin (theta*20)" -H 1 -r "$res" -f ${2}056.png
+
+#new sets
+time stack exec -- two-danode-exe --write-json -H 5 -F "sin(13*x)*cos(10*y*x)" -G "cos $ exp(cos(y*x))" -r "$res" -f ${2}057.png
+time stack exec -- two-danode-exe --write-json -r "$res" -H 10 -F "sin(0.5*x + 1) + cos (y^2/(1+(0.3*x)^2)) - sin((0.5*x))" -G "sin(x)*(cos x - sin y) - sin(x^2-y^2-1) + cos(x^2+y^2-1)" -f ${2}058.png
