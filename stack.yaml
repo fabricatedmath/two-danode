@@ -45,6 +45,7 @@ packages:
 # (e.g., acme-missiles-0.3)
 extra-deps:
 - ffmpeg-light-0.12.0.1
+
 - repa-3.4.1.3
 - repa-io-3.4.1.1
 
@@ -52,7 +53,7 @@ extra-deps:
   commit: f87581dbbc00325ee1914558000b0d529b48a311
 
 - git: https://github.com/fabricatedmath/pipes-graphics
-  commit: 0d2e8120a2b483083289a122eb526f41587218b2
+  commit: e4573ea00ff4a059bb7ac23d3af40c546bc89d79
   subdirs:
     - pipes-graphics-repa
 # - tasty-hedgehog-0.1.0.1
