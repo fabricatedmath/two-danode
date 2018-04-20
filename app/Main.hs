@@ -44,7 +44,7 @@ main =
       eSpace
 
 makeImage
-  :: (Epsilon a, Unbox a, RealFrac a, Floating a, Ord a)
+  :: (Epsilon a, Unbox a, RealFrac a, Floating a, Ord a, RealFloat a)
   => FieldDescription a
   -> Maybe a --logMul
   -> Array U DIM3 (V2 a)
@@ -63,16 +63,14 @@ makeImage fd logMul vectorField =
         maxV `seq` image' `deepSeqArray` return image
 
 renderPoint
-  :: (Epsilon a, RealFrac a, Floating a, Ord a)
+  :: (Epsilon a, RealFrac a, Floating a, Ord a, RealFloat a)
   => Maybe a --logMul
   -> a --maxV
   -> V2 a
   -> V3 a
-renderPoint mlogMul maxV v@(V2 y _x) =
+renderPoint mlogMul maxV v@(V2 y x) =
   let
-    theta | y < 0 = 2*pi - theta'
-          | otherwise = theta'
-      where theta' = acos $ (V2 0 1) `dot` normalize v
+    theta = atan2 y x
     applyLogFilter n =
       case mlogMul of
         Nothing -> n
@@ -82,13 +80,3 @@ renderPoint mlogMul maxV v@(V2 y _x) =
     v' = (*0.6) $ applyLogFilter (norm v) / applyLogFilter maxV
   in uncurryRGB V3 $ hsl h' s' v'
 {-# INLINABLE renderPoint #-}
-
-{-
-repaToImage :: Array U DIM2 (V3 Word8) -> Image PixelRGB8
-repaToImage arr =
-  let
-    (Z :. ydim :. xdim) = R.extent arr
-    v = convert . R.toUnboxed $ arr :: VS.Vector (V3 Word8)
-  in
-    Image xdim ydim $ VS.unsafeCast v
--}
